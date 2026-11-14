@@ -40,6 +40,18 @@ export function approvalCount(decisions: Record<string, MemberDecision>, members
 }
 
 export function diffProposals(prev: Proposal, next: Proposal): string[] {
+  if (prev.baseId !== next.baseId) {
+    // A different trip altogether: summarise instead of listing every swapped part.
+    const pick = (p: Proposal, k: string) => p.components.find((c) => c.kind === k && !c.optional)?.title
+    const out = [`Trip: ${prev.name} → ${next.name}`]
+    for (const [k, label] of [['transport', 'Travel'], ['stay', 'Stay']] as const) {
+      const a = pick(prev, k), b = pick(next, k)
+      if (a && b && a !== b) out.push(`${label}: ${a} → ${b}`)
+    }
+    const acts = next.components.filter((c) => c.kind === 'activity' && !c.optional).map((c) => c.title)
+    if (acts.length) out.push(`Together: ${acts.join(', ')}`)
+    return out
+  }
   const out: string[] = []
   for (const n of next.components) {
     const o = prev.components.find((c) => c.kind === n.kind && (c.id === n.id || c.title === n.title))

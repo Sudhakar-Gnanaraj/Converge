@@ -53,8 +53,12 @@ export function ApprovalTab() {
       {s.noViable && (
         <Card className="mt-3 border-bad/30 p-4">
           <p className="flex items-center gap-1.5 text-[14px] font-semibold text-bad"><TriangleAlert size={16} /> On hold: flight prices went up</p>
-          <p className="mt-1 text-[13px] text-ink">Peak December fares pushed this plan above some members&rsquo; comfort range, so v{current.version} has the new prices and no one is asked to approve it yet. The group is first deciding which constraint, if any, to revisit.</p>
-          <button className="mt-2 text-[13px] font-semibold text-brand-dark" onClick={() => openTab('options')}>Answer in Options →</button>
+          <p className="mt-1 text-[13px] text-ink">
+            {s.noViable === 'watching'
+              ? `Your AI is watching December fares. v${current.version} stays on hold until they drop or the group picks another way forward.`
+              : `Peak December fares pushed this plan above some members’ comfort range, so v${current.version} has the new prices and no one is asked to approve it yet. The group is first deciding which constraint, if any, to revisit.`}
+          </p>
+          {s.noViable === 'asking' && <button className="mt-2 text-[13px] font-semibold text-brand-dark" onClick={() => openTab('options')}>Answer in Options →</button>}
         </Card>
       )}
 
@@ -83,6 +87,13 @@ export function ApprovalTab() {
             <li className="flex gap-2"><span className="text-ai">•</span>Per person: {inr(totalPP(prev))} → <b>{inr(totalPP(current))}</b></li>
           </ul>
           <p className="mt-2 text-[12px] text-muted">This is a material change, so earlier approvals were reset. Everything else is as before.</p>
+        </Card>
+      )}
+
+      {current.mustHaveIssues.length > 0 && (
+        <Card className="mt-3 border-bad/30 p-4">
+          <p className="flex items-center gap-1.5 text-[14px] font-semibold text-bad"><TriangleAlert size={16} /> Breaks a must-have</p>
+          {current.mustHaveIssues.map((m) => <p key={m} className="mt-1 text-[13px] text-ink">{m}</p>)}
         </Card>
       )}
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight, CircleAlert, Info, Sparkles, TriangleAlert } from 'lucide-react'
+import { ChevronRight, CircleAlert, Info, Loader, Sparkles, TriangleAlert } from 'lucide-react'
 import { useStore } from '../../app/store'
 import { BASE_PROPOSALS, PEAK_FLIGHT_RISE } from '../../data/mockTrip'
 import { AiTag, Card, EstimateLabel, KIND_ICON, Pill, PrivateNote, SectionTitle, Segmented, Sheet, cx } from '../../components/ui'
@@ -12,8 +12,13 @@ import { ViewAsToggle } from '../trip/TripScreen'
 import type { Proposal } from '../../types'
 
 export function useProposals(): Proposal[] {
-  const { current } = useStore()
-  return BASE_PROPOSALS.map((p) => (p.baseId === current.baseId ? current : p))
+  const { current, s } = useStore()
+  // Once peak fares hit, options not in decision show peak flight estimates too.
+  const peak = (p: Proposal): Proposal => (!s.peakApplied ? p : {
+    ...p,
+    components: p.components.map((c) => (c.kind === 'transport' && /flight/i.test(c.title) ? { ...c, pricePP: c.pricePP + PEAK_FLIGHT_RISE, detail: c.detail + ' · peak fare' } : c)),
+  })
+  return BASE_PROPOSALS.map((p) => (p.baseId === current.baseId ? current : peak(p)))
 }
 
 export function FitPill({ p }: { p: Proposal }) {
@@ -95,25 +100,45 @@ function CompareTable({ list }: { list: Proposal[] }) {
 }
 
 function NoViable() {
-  const { resolveNoViable, toast } = useStore()
-  const [mine, setMine] = useState(false)
+  const { s, answerNoViable, setBudget, toast } = useStore()
+  const [budgetAnswered, setBudgetAnswered] = useState(false)
+  if (s.noViable === 'watching')
+    return (
+      <Card className="mt-3 border-warn/30 p-4">
+        <p className="flex items-center gap-1.5 text-[14px] font-semibold text-warn"><Loader size={16} className="animate-spin" /> Watching December fares</p>
+        <p className="mt-1 text-[13px] text-ink">The plan stays on hold and nobody is asked to approve it. I&rsquo;ll tell everyone as soon as fares drop.</p>
+      </Card>
+    )
+  const choices: [Parameters<typeof answerNoViable>[0], string, string][] = [
+    ['coorg', 'Consider Coorg instead', 'Keeps every must-have; road trip, no beach'],
+    ['monday', 'Return Monday morning', 'Cheaper flights, one more night; breaks some members’ Sunday must-have'],
+    ['wait', 'Leave it — keep looking', 'Hold the plan and watch for fares to drop'],
+  ]
   return (
     <Card className="mt-3 border-bad/30 p-4">
       <p className="flex items-center gap-1.5 text-[14px] font-semibold text-bad"><TriangleAlert size={16} /> No option meets every must-have right now</p>
       <p className="mt-1 text-[13px] text-ink">December flight estimates rose by {inr(PEAK_FLIGHT_RISE)} per person, so I&rsquo;ve re-priced the current plan. I can&rsquo;t find a Goa option that keeps everyone&rsquo;s comfort range <i>and</i> the &ldquo;back by Sunday night&rdquo; must-have. I won&rsquo;t relax any must-have on my own.</p>
-      <p className="mt-3 text-[12px] font-semibold text-muted">I&rsquo;ve asked the group: which constraint, if any, would you revisit?</p>
+      <p className="mt-3 text-[12px] font-semibold text-muted">Which constraint, if any, would you revisit? Your pick becomes a new version that everyone still has to approve.</p>
       <div className="mt-2 grid gap-1.5">
-        {['Consider Coorg instead (keeps all must-haves)', 'Return Monday morning', 'Leave it — keep looking'].map((o) => (
-          <button key={o} onClick={() => { toast('Your answer is recorded. Nothing changes until the group agrees.'); setMine(true) }} className="rounded-xl border border-line px-3 py-2 text-left text-[13px] hover:border-brand/50">{o}</button>
+        {choices.map(([id, label, hint]) => (
+          <button key={id} onClick={() => answerNoViable(id)} className="rounded-xl border border-line px-3 py-2 text-left hover:border-brand/50">
+            <span className="block text-[13px] font-semibold">{label}</span>
+            <span className="block text-[12px] text-muted">{hint}</span>
+          </button>
         ))}
       </div>
-      {mine && (
+      {!budgetAnswered && s.budget.maximum !== null && (
         <div className="mt-3">
           <PrivateNote>
-            Your AI: your ₹ maximum is a must-have. Would you like to keep it, or allow a little flexibility for this trip?
+            Your AI: your {'₹'} maximum is a must-have. Keep it, or allow a little flexibility for this trip?
             <span className="mt-2 flex gap-2">
-              <button className="rounded-lg bg-white px-2 py-1 font-semibold" onClick={() => { toast('Kept as a must-have'); resolveNoViable() }}>Keep it</button>
-              <button className="rounded-lg bg-white px-2 py-1 font-semibold" onClick={() => { toast('Noted privately: flexible by a little. Your number is still never shared.'); resolveNoViable() }}>Allow a little</button>
+              <button className="rounded-lg bg-white px-2 py-1 font-semibold" onClick={() => { setBudgetAnswered(true); toast('Kept as a must-have. Nothing above it will be approved for you.') }}>Keep it</button>
+              <button className="rounded-lg bg-white px-2 py-1 font-semibold" onClick={() => {
+                const max = Math.round(((s.budget.maximum ?? 0) * 1.1) / 500) * 500
+                setBudget({ maximum: max })
+                setBudgetAnswered(true)
+                toast(`Your private maximum is now ${inr(max)}. Still never shared with the group.`)
+              }}>Allow 10% more</button>
             </span>
           </PrivateNote>
         </div>

@@ -3,7 +3,7 @@ import type {
   ActivityItem, BudgetVisibility, ChatMessage, DecisionStatus, ItineraryDay, Member, MemberDecision,
   Preference, PreferencePriority, PrivateBudget, Proposal, Screen, TripComponent, TripTab,
 } from '../types'
-import { BASE_PROPOSALS, COMPROMISES, ITINERARY, MEMBERS, ME, PEAK_FLIGHT_RISE, STAY_PRICE_RISE, type CompromiseId } from '../data/mockTrip'
+import { BASE_PROPOSALS, COMPROMISES, ITINERARY, MEMBERS, ME, OTHER_SHARED, PEAK_FARE_DROP, PEAK_FLIGHT_RISE, STAY_PRICE_RISE, type CompromiseId } from '../data/mockTrip'
 import { CLOSING, STEPS } from '../features/discovery/script'
 import { parseAnswer } from '../features/discovery/parser'
 import { agentSignal } from '../lib/personalAgents'
@@ -34,7 +34,9 @@ interface State {
   holdEndsAt: number
   toast: { id: string; text: string } | null
   viewAs: 'me' | 'group'
-  noViable: boolean
+  /** Peak-prices edge case: 'asking' = the group is asked what to revisit; 'watching' = waiting for fares to drop. */
+  noViable: false | 'asking' | 'watching'
+  peakApplied: boolean
 }
 
 const firstChat = (): ChatMessage[] => [{ id: uid(), from: 'ai', text: STEPS[0].ai }]
@@ -68,6 +70,7 @@ const initial = (): State => ({
   toast: null,
   viewAs: 'me',
   noViable: false,
+  peakApplied: false,
 })
 
 function useStoreValue() {
@@ -131,6 +134,12 @@ function useStoreValue() {
         const cur = ref.current
         const m = cur.members.find((x) => x.id === id)
         if (!m?.active || cur.decisions[id]?.proposalVersion !== version || APPROVED.includes(cur.decisions[id].status)) return
+        const sundayMust = OTHER_SHARED[id]?.prefs.some((x) => x.priority === 'must-have' && /Sun night/.test(x.label))
+        if (p.mustHaveIssues.length > 0 && sundayMust && id !== 'sam') {
+          setS((x) => ({ ...x, decisions: { ...x.decisions, [id]: { memberId: id, proposalVersion: version, status: 'changes-requested', note: 'Needs to be back by Sunday night (must-have)' } } }))
+          log(`${m.name} asked for changes to v${version}: a must-have is broken`, 'warn')
+          return
+        }
         if (id === 'sam') {
           // Pre-approval is explicit, opt-in consent with limits; outside the limits Sam must decide.
           const ok = m.preApproval && agentSignal('sam', total) !== 'above' && p.mustHaveIssues.length === 0
@@ -246,12 +255,14 @@ function useStoreValue() {
   }, [later, log, toast])
 
   /** Creates a new version. Material changes reset every response to "Review needed". */
-  const createVersion = useCallback((components: TripComponent[], label: string, opts: { priyaWaits: boolean; mustHaveIssues?: string[]; simulate?: boolean } = { priyaWaits: true }) => {
+  const createVersion = useCallback((components: TripComponent[], label: string, opts: { priyaWaits: boolean; mustHaveIssues?: string[]; simulate?: boolean; base?: Partial<Proposal> } = { priyaWaits: true }) => {
     const cur = ref.current
     const prev = cur.versions[cur.versions.length - 1]
+    const baseId = opts.base?.baseId ?? prev.baseId
     const next: Proposal = {
       ...prev,
-      id: `${prev.baseId}@${prev.version + 1}`,
+      ...opts.base,
+      id: `${baseId}@${prev.version + 1}`,
       version: prev.version + 1,
       components,
       mustHaveIssues: opts.mustHaveIssues ?? [],
@@ -401,23 +412,62 @@ function useStoreValue() {
    *  and nobody is asked to approve it until the group decides what to revisit. */
   const triggerNoViable = useCallback(() => {
     const cur = ref.current
-    if (cur.booking !== 'idle') return
+    if (cur.booking !== 'idle' || cur.noViable) return
     const prev = cur.versions[cur.versions.length - 1]
     const flight = prev.components.find((c) => c.kind === 'transport' && /flight/i.test(c.title))
     if (flight && !flight.detail.includes('peak fare')) {
       const raised = { ...flight, pricePP: flight.pricePP + PEAK_FLIGHT_RISE, detail: flight.detail + ' · peak fare' }
       createVersion(prev.components.map((c) => (c.id === flight.id ? raised : c)), `December flight estimates rose by ₹${PEAK_FLIGHT_RISE.toLocaleString('en-IN')}/person`, { priyaWaits: true, simulate: false })
     }
-    patch({ noViable: true })
+    patch({ noViable: 'asking', peakApplied: true })
     openTab('options')
   }, [createVersion, patch, openTab])
 
-  /** The group has answered the "what would you revisit?" question; members can respond to the re-priced version again. */
-  const resolveNoViable = useCallback(() => {
+  /** Riya's answer to "which constraint would you revisit?". Each answer becomes a concrete,
+   *  re-priced version (or a fare watch); the group still decides by approving it. */
+  const answerNoViable = useCallback((choice: 'coorg' | 'monday' | 'wait') => {
     const cur = ref.current
-    patch({ noViable: false })
-    simulateResponses(cur.versions[cur.versions.length - 1], { priyaWaits: true })
-  }, [patch, simulateResponses])
+    const prev = cur.versions[cur.versions.length - 1]
+    if (choice === 'coorg') {
+      const coorg = BASE_PROPOSALS.find((p) => p.baseId === 'coorg')!
+      const { id: _id, version: _v, status: _s, changeSummary: _c, ...fields } = coorg
+      const { version } = createVersion(coorg.components, 'Riya proposed switching to Coorg, which keeps every must-have', { priyaWaits: true, base: fields })
+      patch({ noViable: false })
+      toast(`Coorg is now v${version}. It goes ahead only if everyone approves it.`)
+      openTab('approval')
+      return
+    }
+    if (choice === 'monday') {
+      const flight = prev.components.find((c) => c.kind === 'transport')
+      const stay = prev.components.find((c) => c.kind === 'stay')
+      if (!flight || !stay) return
+      const mondayFlight = { ...flight, id: flight.id + '-mon', title: 'Flights BLR ⇄ GOI · Monday return', detail: 'Fri 06:05 → 07:15 · Mon 06:10 → 07:20 · off-peak return', pricePP: Math.round(flight.pricePP * 0.55 / 100) * 100 }
+      const longerStay = { ...stay, detail: stay.detail.replace('2 nights', '3 nights'), pricePP: Math.round(stay.pricePP * 1.5 / 100) * 100 }
+      const { version } = createVersion(prev.components.map((c) => (c.id === flight.id ? mondayFlight : c.id === stay.id ? longerStay : c)), 'Riya proposed returning Monday morning', {
+        priyaWaits: true,
+        mustHaveIssues: ['Returns Monday morning, which breaks the "back by Sunday night" must-have some members hold. Each of them has to agree.'],
+        base: { dates: 'Fri 11 – Mon 14 Dec 2026' },
+      })
+      patch({ noViable: false })
+      toast(`Monday return is v${version}: cheaper flights, one more night. It breaks some members' must-have, so they decide.`)
+      openTab('approval')
+      return
+    }
+    patch({ noViable: 'watching' })
+    log('Plan stays on hold. Your AI is watching December fares', 'ai')
+    toast('The plan stays on hold. I’ll tell everyone when fares drop.')
+    later(6000, () => {
+      const c = ref.current
+      if (c.noViable !== 'watching') return
+      const p = c.versions[c.versions.length - 1]
+      const fl = p.components.find((x) => x.kind === 'transport' && /flight/i.test(x.title))
+      if (!fl) { patch({ noViable: false }); return }
+      const cheaper = { ...fl, pricePP: fl.pricePP - PEAK_FARE_DROP, detail: fl.detail.replace(' · peak fare', ' · fare dropped') }
+      const { version } = createVersion(p.components.map((x) => (x.id === fl.id ? cheaper : x)), `Flight fares dropped by ₹${PEAK_FARE_DROP.toLocaleString('en-IN')}/person`, { priyaWaits: true })
+      patch({ noViable: false })
+      toast(`Fares dropped by ₹${PEAK_FARE_DROP.toLocaleString('en-IN')} per person. v${version} is ready for everyone to review.`)
+    })
+  }, [createVersion, patch, toast, openTab, log, later])
 
   return {
     s, current, go, navigate, back, replace, resetTo, openTab, toast, log, patch,
@@ -426,7 +476,7 @@ function useStoreValue() {
     decide, nudge, createVersion, applyCompromise, swapComponent,
     toggleJoin, makeOptional, toggleLock, regenerate,
     startBooking, respondToPriceChange, pay,
-    reset, memberLeaves, memberRejects, jump, triggerNoViable, resolveNoViable,
+    reset, memberLeaves, memberRejects, jump, triggerNoViable, answerNoViable,
   }
 }
 

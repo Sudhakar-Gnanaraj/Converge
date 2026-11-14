@@ -71,7 +71,7 @@ function DemoControls({ onDone }: { onDone?: () => void }) {
         <div className="grid gap-1.5">
           <button className={btn} disabled={booking || s.optionsState !== 'ready'} onClick={act(() => memberRejects('karan'))}>Karan rejects the current version</button>
           <button className={btn} disabled={booking || !s.members.find((m) => m.id === 'priya')?.active} onClick={act(() => memberLeaves('priya'))}>Priya steps out of the trip</button>
-          <button className={btn} disabled={booking} onClick={act(triggerNoViable)}>Peak prices: no option meets every must-have</button>
+          <button className={btn} disabled={booking || !!s.noViable} onClick={act(triggerNoViable)}>Peak prices: no option meets every must-have</button>
           {booking && (
             <p className="text-[12px] leading-snug text-muted">
               These happen while the group is still planning. Booking has {s.booking === 'paid' ? 'been paid' : 'started'}, so jump back to step 3 or 5 to try them.
