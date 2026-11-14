@@ -4,10 +4,11 @@ import type {
   Preference, PreferencePriority, PrivateBudget, Proposal, Screen, TripComponent, TripTab,
 } from '../types'
 import { BASE_PROPOSALS, COMPROMISES, ITINERARY, MEMBERS, ME, STAY_PRICE_RISE, type CompromiseId } from '../data/mockTrip'
-import { CLOSING, STEPS, parseFreeText } from '../features/discovery/script'
+import { CLOSING, STEPS } from '../features/discovery/script'
+import { parseAnswer } from '../features/discovery/parser'
 import { agentSignal } from '../lib/personalAgents'
 import { APPROVED, diffProposals, isFinal, isMaterialChange, resetDecisions, totalPP } from '../lib/proposalRules'
-import { now, uid } from '../lib/format'
+import { now, prefText, uid } from '../lib/format'
 
 export type BookingStage = 'idle' | 'checking' | 'holding' | 'price-changed' | 'reapproval' | 'ready' | 'paying' | 'paid'
 
@@ -151,7 +152,7 @@ function useStoreValue() {
     const cur = ref.current
     if (cur.aiTyping || cur.chatStep >= STEPS.length) return
     const step = cur.chatStep
-    const res = fromQuickReply ? { ...STEPS[step].extract(text), unsure: false } : parseFreeText(step, text)
+    const res = fromQuickReply ? { ...STEPS[step].extract(text), unsure: [] as string[] } : parseAnswer(step, text)
     const prefs = addPrefs(res.prefs)
     const isBudget = step === 3
     setS((p) => ({
@@ -163,7 +164,14 @@ function useStoreValue() {
     }))
     later(900, () => {
       const next = step + 1
-      const msgs: ChatMessage[] = [{ id: uid(), from: 'ai', text: res.unsure ? `I noted “${text}” but wasn’t sure how strongly you feel, so it’s marked Not sure. Tap the card to classify it.` : '', extracted: prefs.map((x) => x.label) }]
+      const ack = res.unsure.length
+        ? `I noted “${res.unsure.join('”, “')}” but couldn’t tell how strongly you feel, so it’s marked Not sure. Tap the card to set it.`
+        : fromQuickReply
+          ? ''
+          : prefs.length
+            ? (ref.current.chat.some((m) => m.text.startsWith('Got it. I’ve guessed')) ? '' : 'Got it. I’ve guessed how strongly you feel from your wording. Tap a card if I got it wrong.')
+            : 'Noted, nothing to add there.'
+      const msgs: ChatMessage[] = [{ id: uid(), from: 'ai', text: ack, extracted: prefs.map((x) => `${prefText(x)} (${PRIORITY_LABEL[x.priority]})`) }]
       if (next < STEPS.length) msgs.push({ id: uid(), from: 'ai', text: STEPS[next].ai })
       else msgs.push({ id: uid(), from: 'ai', text: CLOSING })
       setS((p) => ({ ...p, chat: [...p.chat, ...msgs.filter((m) => m.text || m.extracted?.length)], chatStep: next, aiTyping: false, discoveryDone: next >= STEPS.length }))

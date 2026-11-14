@@ -3,6 +3,7 @@ import { Lock, Trash2 } from 'lucide-react'
 import { PRIORITY_LABEL, useStore } from '../../app/store'
 import { Button, PRIORITY_STYLE, Sheet, cx } from '../../components/ui'
 import type { Preference, PreferencePriority } from '../../types'
+import { prefText } from '../../lib/format'
 
 const PRIORITY_HELP: Record<PreferencePriority, string> = {
   'must-have': 'Hard limit. Every proposal must respect it, and the AI will ask you before ever treating it as flexible.',
@@ -16,7 +17,7 @@ export function PreferenceChip({ p, onClick }: { p: Preference; onClick?: () => 
     <button onClick={onClick} className="anim-pop inline-flex max-w-full items-center gap-1.5 rounded-full border border-line bg-white py-1 pr-2.5 pl-1 text-left text-[12.5px] transition hover:border-brand/50">
       <span className={cx('rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide', PRIORITY_STYLE[p.priority])}>{PRIORITY_LABEL[p.priority]}</span>
       {p.category === 'budget' && <Lock size={11} className="shrink-0 text-private" />}
-      <span className="truncate">{p.label}</span>
+      <span className="truncate">{prefText(p)}</span>
     </button>
   )
 }

@@ -91,16 +91,3 @@ export const STEPS: Step[] = [
 
 export const CLOSING =
   'Here’s what I understood. Tap any card to fix the wording or change how strongly you feel. Next, you’ll choose exactly what the group can see.'
-
-const STEP_CATEGORY: PreferenceCategory[] = ['style', 'destination', 'dates', 'budget', 'stay', 'want']
-
-/**
- * Free-text answers: budget numbers are parsed; anything else keeps the user's own
- * words and is marked "Not sure" so they classify it themselves (AI doesn't guess strength).
- */
-export function parseFreeText(step: number, text: string): Extract & { unsure: boolean } {
-  if (step === 3) return { ...STEPS[3].extract(text), unsure: !/\d/.test(text) }
-  const t = text.trim()
-  const avoid = /^(avoid|no |not |don'?t)/i.test(t)
-  return { prefs: [p(avoid ? 'avoid' : STEP_CATEGORY[step], t.charAt(0).toUpperCase() + t.slice(1), 'not-sure')], unsure: true }
-}

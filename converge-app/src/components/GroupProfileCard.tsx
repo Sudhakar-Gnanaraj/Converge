@@ -2,6 +2,7 @@ import { EyeOff, Wallet } from 'lucide-react'
 import type { GroupProfile, Member } from '../types'
 import { PRIORITY_LABEL } from '../app/store'
 import { Avatar, PRIORITY_STYLE, cx } from './ui'
+import { prefText } from '../lib/format'
 
 /** Group-facing. Receives only a GroupProfile, which by construction holds no private amounts. */
 export function GroupProfileCard({ member, profile, compact }: { member: Member; profile: GroupProfile; compact?: boolean }) {
@@ -23,7 +24,7 @@ export function GroupProfileCard({ member, profile, compact }: { member: Member;
         {profile.sharedPreferences.map((p) => (
           <span key={p.id} className="inline-flex items-center gap-1 rounded-full border border-line py-0.5 pr-2 pl-0.5 text-[12px]">
             <span className={cx('rounded-full px-1.5 py-0.5 text-[9.5px] font-bold uppercase', PRIORITY_STYLE[p.priority])}>{PRIORITY_LABEL[p.priority]}</span>
-            {p.label}
+            {prefText(p)}
           </span>
         ))}
         {profile.hiddenCount > 0 && (
