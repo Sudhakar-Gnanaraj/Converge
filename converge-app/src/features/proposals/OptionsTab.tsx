@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronRight, CircleAlert, Info, Sparkles, TriangleAlert } from 'lucide-react'
 import { useStore } from '../../app/store'
-import { BASE_PROPOSALS } from '../../data/mockTrip'
+import { BASE_PROPOSALS, PEAK_FLIGHT_RISE } from '../../data/mockTrip'
 import { AiTag, Card, EstimateLabel, KIND_ICON, Pill, PrivateNote, SectionTitle, Segmented, Sheet, cx } from '../../components/ui'
 import { useGroupFit, useMyFit } from '../../lib/selectors'
 import { totalPP } from '../../lib/proposalRules'
@@ -95,12 +95,12 @@ function CompareTable({ list }: { list: Proposal[] }) {
 }
 
 function NoViable() {
-  const { patch, toast } = useStore()
+  const { resolveNoViable, toast } = useStore()
   const [mine, setMine] = useState(false)
   return (
     <Card className="mt-3 border-bad/30 p-4">
       <p className="flex items-center gap-1.5 text-[14px] font-semibold text-bad"><TriangleAlert size={16} /> No option meets every must-have right now</p>
-      <p className="mt-1 text-[13px] text-ink">December flight estimates rose. I can&rsquo;t find a Goa option that keeps everyone&rsquo;s comfort range <i>and</i> the &ldquo;back by Sunday night&rdquo; must-have. I won&rsquo;t relax any must-have on my own.</p>
+      <p className="mt-1 text-[13px] text-ink">December flight estimates rose by {inr(PEAK_FLIGHT_RISE)} per person, so I&rsquo;ve re-priced the current plan. I can&rsquo;t find a Goa option that keeps everyone&rsquo;s comfort range <i>and</i> the &ldquo;back by Sunday night&rdquo; must-have. I won&rsquo;t relax any must-have on my own.</p>
       <p className="mt-3 text-[12px] font-semibold text-muted">I&rsquo;ve asked the group: which constraint, if any, would you revisit?</p>
       <div className="mt-2 grid gap-1.5">
         {['Consider Coorg instead (keeps all must-haves)', 'Return Monday morning', 'Leave it — keep looking'].map((o) => (
@@ -112,8 +112,8 @@ function NoViable() {
           <PrivateNote>
             Your AI: your ₹ maximum is a must-have. Would you like to keep it, or allow a little flexibility for this trip?
             <span className="mt-2 flex gap-2">
-              <button className="rounded-lg bg-white px-2 py-1 font-semibold" onClick={() => { toast('Kept as a must-have'); patch({ noViable: false }) }}>Keep it</button>
-              <button className="rounded-lg bg-white px-2 py-1 font-semibold" onClick={() => { toast('Noted privately: flexible by a little. Your number is still never shared.'); patch({ noViable: false }) }}>Allow a little</button>
+              <button className="rounded-lg bg-white px-2 py-1 font-semibold" onClick={() => { toast('Kept as a must-have'); resolveNoViable() }}>Keep it</button>
+              <button className="rounded-lg bg-white px-2 py-1 font-semibold" onClick={() => { toast('Noted privately: flexible by a little. Your number is still never shared.'); resolveNoViable() }}>Allow a little</button>
             </span>
           </PrivateNote>
         </div>

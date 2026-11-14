@@ -213,6 +213,8 @@ export const COMPROMISES: Compromise[] = [
 ]
 
 export const STAY_PRICE_RISE = 700
+/** Demo edge case: peak-season December flight estimates (per person). */
+export const PEAK_FLIGHT_RISE = 2400
 
 export const ITINERARY: ItineraryDay[] = [
   {

@@ -3,7 +3,7 @@ import type {
   ActivityItem, BudgetVisibility, ChatMessage, DecisionStatus, ItineraryDay, Member, MemberDecision,
   Preference, PreferencePriority, PrivateBudget, Proposal, Screen, TripComponent, TripTab,
 } from '../types'
-import { BASE_PROPOSALS, COMPROMISES, ITINERARY, MEMBERS, ME, STAY_PRICE_RISE, type CompromiseId } from '../data/mockTrip'
+import { BASE_PROPOSALS, COMPROMISES, ITINERARY, MEMBERS, ME, PEAK_FLIGHT_RISE, STAY_PRICE_RISE, type CompromiseId } from '../data/mockTrip'
 import { CLOSING, STEPS } from '../features/discovery/script'
 import { parseAnswer } from '../features/discovery/parser'
 import { agentSignal } from '../lib/personalAgents'
@@ -246,7 +246,7 @@ function useStoreValue() {
   }, [later, log, toast])
 
   /** Creates a new version. Material changes reset every response to "Review needed". */
-  const createVersion = useCallback((components: TripComponent[], label: string, opts: { priyaWaits: boolean; mustHaveIssues?: string[] } = { priyaWaits: true }) => {
+  const createVersion = useCallback((components: TripComponent[], label: string, opts: { priyaWaits: boolean; mustHaveIssues?: string[]; simulate?: boolean } = { priyaWaits: true }) => {
     const cur = ref.current
     const prev = cur.versions[cur.versions.length - 1]
     const next: Proposal = {
@@ -268,7 +268,7 @@ function useStoreValue() {
       nudged: material ? {} : p.nudged,
     }))
     log(`${label} → v${next.version}${material ? '. Material change: all approvals reset' : ' (minor, approvals kept)'}`, 'ai')
-    if (material) simulateResponses(next, opts)
+    if (material && opts.simulate !== false) simulateResponses(next, opts)
     return { version: next.version, material }
   }, [log, simulateResponses])
 
@@ -397,11 +397,27 @@ function useStoreValue() {
     later(50, () => confirmPrivacy())
   }, [reset, later, confirmPrivacy])
 
+  /** Peak prices: flight estimates rise, so the current version is re-priced (a material change)
+   *  and nobody is asked to approve it until the group decides what to revisit. */
   const triggerNoViable = useCallback(() => {
-    if (ref.current.booking !== 'idle') return
+    const cur = ref.current
+    if (cur.booking !== 'idle') return
+    const prev = cur.versions[cur.versions.length - 1]
+    const flight = prev.components.find((c) => c.kind === 'transport' && /flight/i.test(c.title))
+    if (flight && !flight.detail.includes('peak fare')) {
+      const raised = { ...flight, pricePP: flight.pricePP + PEAK_FLIGHT_RISE, detail: flight.detail + ' · peak fare' }
+      createVersion(prev.components.map((c) => (c.id === flight.id ? raised : c)), `December flight estimates rose by ₹${PEAK_FLIGHT_RISE.toLocaleString('en-IN')}/person`, { priyaWaits: true, simulate: false })
+    }
     patch({ noViable: true })
     openTab('options')
-  }, [patch, openTab])
+  }, [createVersion, patch, openTab])
+
+  /** The group has answered the "what would you revisit?" question; members can respond to the re-priced version again. */
+  const resolveNoViable = useCallback(() => {
+    const cur = ref.current
+    patch({ noViable: false })
+    simulateResponses(cur.versions[cur.versions.length - 1], { priyaWaits: true })
+  }, [patch, simulateResponses])
 
   return {
     s, current, go, navigate, back, replace, resetTo, openTab, toast, log, patch,
@@ -410,7 +426,7 @@ function useStoreValue() {
     decide, nudge, createVersion, applyCompromise, swapComponent,
     toggleJoin, makeOptional, toggleLock, regenerate,
     startBooking, respondToPriceChange, pay,
-    reset, memberLeaves, memberRejects, jump, triggerNoViable,
+    reset, memberLeaves, memberRejects, jump, triggerNoViable, resolveNoViable,
   }
 }
 

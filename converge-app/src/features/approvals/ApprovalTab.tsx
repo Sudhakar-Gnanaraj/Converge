@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, Check, CircleCheck, Handshake, History, ShieldCheck, ThumbsDown, Undo2 } from 'lucide-react'
+import { Bell, Check, CircleCheck, Handshake, History, ShieldCheck, ThumbsDown, TriangleAlert, Undo2 } from 'lucide-react'
 import { useStore } from '../../app/store'
 import { ME } from '../../data/mockTrip'
 import { AiTag, Avatar, Button, Card, EstimateLabel, KIND_ICON, PrivateNote, Progress, SectionTitle, Sheet, StatusBadge, cx } from '../../components/ui'
@@ -14,7 +14,7 @@ import { FitPill } from '../proposals/OptionsTab'
 const CHANGE_REASONS = ['Stay', 'Price', 'Travel times', 'Activities', 'Something else']
 
 export function ApprovalTab() {
-  const { s, current, decide, nudge, go, toast } = useStore()
+  const { s, current, decide, nudge, go, toast, openTab } = useStore()
   const myFit = useMyFit()(current)
   const [sheet, setSheet] = useState<null | 'changes' | 'reject' | 'approve-warning'>(null)
   const [reason, setReason] = useState<string>('Price')
@@ -49,6 +49,14 @@ export function ApprovalTab() {
   return (
     <div className="pt-1">
       <ViewAsToggle />
+
+      {s.noViable && (
+        <Card className="mt-3 border-bad/30 p-4">
+          <p className="flex items-center gap-1.5 text-[14px] font-semibold text-bad"><TriangleAlert size={16} /> On hold: flight prices went up</p>
+          <p className="mt-1 text-[13px] text-ink">Peak December fares pushed this plan above some members&rsquo; comfort range, so v{current.version} has the new prices and no one is asked to approve it yet. The group is first deciding which constraint, if any, to revisit.</p>
+          <button className="mt-2 text-[13px] font-semibold text-brand-dark" onClick={() => openTab('options')}>Answer in Options →</button>
+        </Card>
+      )}
 
       <Card className={cx('mt-3 p-4', final && 'border-ok/40 bg-ok-soft')}>
         <div className="flex items-start justify-between gap-2">

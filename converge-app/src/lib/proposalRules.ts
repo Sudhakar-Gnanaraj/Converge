@@ -1,4 +1,5 @@
 import type { DecisionStatus, Member, MemberDecision, Proposal } from '../types'
+import { inr } from './format'
 
 export const totalPP = (p: Proposal) => p.components.filter((c) => !c.optional).reduce((s, c) => s + c.pricePP, 0)
 
@@ -47,7 +48,9 @@ export function diffProposals(prev: Proposal, next: Proposal): string[] {
       out.push(replaced ? `${replaced.title} → ${n.title}` : `Added ${n.title}`)
     } else if (o.optional !== n.optional) {
       out.push(`${n.title} → ${n.optional ? 'optional' : 'shared'}`)
-    } else if (o.pricePP !== n.pricePP || o.detail !== n.detail) {
+    } else if (o.pricePP !== n.pricePP) {
+      out.push(`${n.title}: ${inr(o.pricePP)} → ${inr(n.pricePP)} per person`)
+    } else if (o.detail !== n.detail) {
       out.push(`${n.title}: updated`)
     }
   }
