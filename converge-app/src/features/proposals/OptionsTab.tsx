@@ -73,7 +73,7 @@ function CompareTable({ list }: { list: Proposal[] }) {
     { k: 'Main trade-off', v: (p) => p.tradeoffs[0] },
   ]
   return (
-    <div className="no-scrollbar -mx-4 overflow-x-auto px-4">
+    <div className="hscroll -mx-4 overflow-x-auto px-4 pb-2">
       <table className="w-[560px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-line bg-white text-left text-[12.5px]">
         <thead>
           <tr>

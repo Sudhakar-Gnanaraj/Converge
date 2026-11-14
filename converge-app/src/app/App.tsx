@@ -82,7 +82,7 @@ function DemoControls({ onDone }: { onDone?: () => void }) {
 function SidePanel() {
   const steps = useJourney()
   return (
-    <aside className="hidden w-[340px] shrink-0 flex-col gap-6 lg:flex">
+    <aside className="hscroll hidden max-h-full w-[340px] shrink-0 flex-col gap-6 overflow-y-auto py-2 pr-2 lg:flex">
       <div>
         <p className="text-[12px] font-semibold uppercase tracking-[.14em] text-brand-dark">Concept prototype</p>
         <h1 className="mt-1 text-[34px] font-extrabold leading-none tracking-tight text-navy">Converge</h1>
@@ -117,10 +117,10 @@ function SidePanel() {
 function Shell() {
   const [demoOpen, setDemoOpen] = useState(false)
   return (
-    <div className="flex min-h-full items-center justify-center gap-12 lg:p-8">
+    <div className="flex min-h-full items-center justify-center gap-12 lg:h-[100dvh] lg:overflow-hidden lg:p-6">
       <SidePanel />
-      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-bg sm:h-[844px] sm:max-h-[calc(100dvh-32px)] sm:w-[390px] sm:rounded-[44px] sm:border-[10px] sm:border-[#0d1117] sm:shadow-2xl">
-        <div id="scroller" className="no-scrollbar relative flex flex-1 flex-col overflow-y-auto">
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-bg sm:h-[844px] sm:max-h-[calc(100dvh-32px)] lg:max-h-full sm:w-[390px] sm:rounded-[44px] sm:border-[10px] sm:border-[#0d1117] sm:shadow-2xl">
+        <div id="scroller" className="relative flex flex-1 flex-col overflow-y-auto">
           <Router />
         </div>
         <div id="phone-overlay" className="pointer-events-none absolute inset-0 z-50" />

@@ -45,12 +45,12 @@ export function TripScreen({ tab }: { tab: TripTab }) {
     <div className="relative flex min-h-full flex-1 flex-col">
       <div className="sticky top-0 z-20">
       <Header sticky={false} title={TRIP.name} subtitle={TRIP.dates} onBack={back} right={<AvatarStack members={s.members} size={22} />} />
-      <nav className="no-scrollbar flex gap-1 overflow-x-auto bg-navy px-2 pb-2">
+      <nav className="grid grid-cols-5 gap-0.5 bg-navy px-1.5 pb-2">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => openTab(t.id)}
-            className={cx('relative shrink-0 rounded-full px-3 py-1.5 text-[13px] font-semibold transition', tab === t.id ? 'bg-white text-navy' : 'text-white/70 hover:text-white')}
+            className={cx('relative rounded-full px-1 py-1.5 text-[12.5px] font-semibold whitespace-nowrap transition', tab === t.id ? 'bg-white text-navy' : 'text-white/70 hover:text-white')}
           >
             {t.label}
             {t.id === 'approval' && needsMe && <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-[#FF6B4A]" aria-label="Needs your decision" />}

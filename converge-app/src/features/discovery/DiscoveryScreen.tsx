@@ -93,7 +93,7 @@ export function DiscoveryScreen() {
               <p className="mb-1.5 flex items-center gap-1 px-1 text-[11.5px] text-private"><Lock size={11} /> {step.hint}</p>
             )}
             {step && !s.aiTyping && (
-              <div className="no-scrollbar -mx-3 mb-2 flex gap-1.5 overflow-x-auto px-3">
+              <div className="mb-2 flex flex-wrap gap-1.5">
                 {step.replies.map((r) => (
                   <button key={r} onClick={() => answer(r, true)} className="shrink-0 rounded-full border border-brand/40 bg-brand-soft px-3 py-1.5 text-[13px] font-medium text-brand-dark transition active:scale-95">
                     {r}
