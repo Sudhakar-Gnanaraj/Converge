@@ -48,5 +48,16 @@ body { margin: 0; background: #DDE3EC; color: var(--color-ink); font-family: var
 /* Mouse/trackpad users get a thin visible scrollbar where content scrolls. */
 @media (pointer: fine) {
   .hscroll { scrollbar-width: thin; scrollbar-color: #C5CCD8 transparent; }
-  #scroller { scrollbar-width: thin; scrollbar-color: #C5CCD8 transparent; }
+}
+
+/* The phone screen's scrollbar: a slim thumb floating inside the screen,
+   kept clear of the rounded corners (like a real phone's scroll indicator). */
+@media (pointer: fine) {
+  #scroller::-webkit-scrollbar { width: 9px; }
+  #scroller::-webkit-scrollbar-track { background: transparent; margin-block: 48px; }
+  #scroller::-webkit-scrollbar-thumb { background: #C5CCD8; border-radius: 9px; border: 3px solid transparent; background-clip: padding-box; }
+  #scroller::-webkit-scrollbar-thumb:hover { background-color: #9AA4B5; }
+  @supports not selector(::-webkit-scrollbar) {
+    #scroller { scrollbar-width: thin; scrollbar-color: #C5CCD8 transparent; }
+  }
 }
