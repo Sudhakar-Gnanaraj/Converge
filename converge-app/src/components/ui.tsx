@@ -8,7 +8,7 @@ export const cx = (...a: (string | false | null | undefined)[]) => a.filter(Bool
 // ── layout ──────────────────────────────────────────────────
 export function Header({ title, subtitle, onBack, right, tone = 'dark', sticky = true }: { title: string; subtitle?: string; onBack?: () => void; right?: ReactNode; tone?: 'dark' | 'light'; sticky?: boolean }) {
   return (
-    <header className={cx(sticky && 'sticky top-0 z-20', 'flex items-center gap-2 px-3 pt-3 pb-3', tone === 'dark' ? 'bg-navy text-white' : 'bg-white text-ink border-b border-line')}>
+    <header className={cx(sticky && 'sticky top-0 z-20', 'flex items-center gap-2 px-3 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3', tone === 'dark' ? 'bg-navy text-white' : 'bg-white text-ink border-b border-line')}>
       {onBack && (
         <button onClick={onBack} aria-label="Back" className={cx('grid h-9 w-9 place-items-center rounded-full', tone === 'dark' ? 'hover:bg-white/10' : 'hover:bg-bg')}>
           <ArrowLeft size={20} />
@@ -62,7 +62,7 @@ export function Button({ children, onClick, variant = 'primary', className, disa
 }
 
 export function BottomBar({ children }: { children: ReactNode }) {
-  return <div className="sticky bottom-0 z-20 border-t border-line bg-white/95 px-4 pt-3 pb-4 backdrop-blur">{children}</div>
+  return <div className="sticky bottom-0 z-20 border-t border-line bg-white/95 px-4 pt-3 backdrop-blur pb-[calc(1rem+env(safe-area-inset-bottom))]">{children}</div>
 }
 
 // ── people ──────────────────────────────────────────────────
@@ -173,7 +173,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   const node = (
     <div className="pointer-events-auto absolute inset-0 z-50 flex flex-col justify-end">
       <button aria-label="Close" className="anim-fade absolute inset-0 bg-navy/45" onClick={onClose} />
-      <div role="dialog" aria-label={title} className="anim-sheet relative max-h-[86%] overflow-y-auto rounded-t-3xl bg-white px-4 pt-2 pb-5">
+      <div role="dialog" aria-label={title} className="anim-sheet relative max-h-[86%] overflow-y-auto rounded-t-3xl bg-white px-4 pt-2 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
         <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-line" />
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-[17px] font-semibold">{title}</h3>

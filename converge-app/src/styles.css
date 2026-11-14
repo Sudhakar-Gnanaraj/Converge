@@ -61,3 +61,9 @@ body { margin: 0; background: #DDE3EC; color: var(--color-ink); font-family: var
     #scroller { scrollbar-width: thin; scrollbar-color: #C5CCD8 transparent; }
   }
 }
+
+/* iPhone Safari zooms the page into any text field under 16px and doesn't zoom
+   back out. On the full-screen phone layout, give fields 16px text. */
+@media (max-width: 639px) {
+  input, textarea, select { font-size: 16px; }
+}

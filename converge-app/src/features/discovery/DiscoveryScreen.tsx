@@ -84,7 +84,7 @@ export function DiscoveryScreen() {
         <div ref={endRef} />
       </div>
 
-      <div className="sticky bottom-0 z-10 border-t border-line bg-white px-3 pt-2.5 pb-4">
+      <div className="sticky bottom-0 z-10 border-t border-line bg-white px-3 pt-2.5 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         {done ? (
           <Button className="w-full" onClick={() => go({ name: 'privacy' })}>Review & choose what to share</Button>
         ) : (

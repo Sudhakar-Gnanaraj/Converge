@@ -141,7 +141,7 @@ export function ApprovalTab() {
       )}
 
       {!final && s.booking === 'idle' && (
-        <div className="sticky bottom-0 -mx-4 mt-5 border-t border-line bg-white/95 px-4 pt-3 pb-4 backdrop-blur">
+        <div className="sticky bottom-0 -mx-4 mt-5 border-t border-line bg-white/95 px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur">
           {iApproved ? (
             <div className="flex items-center justify-between gap-2">
               <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-ok"><Check size={16} /> You approved v{current.version}</p>

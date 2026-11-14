@@ -24,7 +24,7 @@ export function HomeScreen() {
 
   return (
     <div className="flex-1">
-      <div className="bg-gradient-to-b from-navy to-navy-2 px-4 pt-5 pb-14 text-white">
+      <div className="bg-gradient-to-b from-navy to-navy-2 px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-14 text-white">
         <p className="text-[13px] text-white/70">Good evening,</p>
         <p className="text-[22px] font-bold">Riya</p>
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-white px-3 py-3 text-[14px] text-muted">
