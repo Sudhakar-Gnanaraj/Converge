@@ -357,7 +357,7 @@ function useStoreValue() {
 
   const memberLeaves = useCallback((id: string) => {
     const m = ref.current.members.find((x) => x.id === id)
-    if (!m?.active) return
+    if (!m?.active || ref.current.booking !== 'idle') return
     setS((p) => ({ ...p, members: p.members.map((x) => (x.id === id ? { ...x, active: false } : x)) }))
     log(`${m.name} stepped out of this trip. Decisions now need the remaining ${ref.current.members.filter((x) => x.active).length - 1}`, 'warn')
     toast(`${m.name} stepped out. Approval now needs the remaining members.`)
@@ -365,6 +365,7 @@ function useStoreValue() {
 
   const memberRejects = useCallback((id: string) => {
     const cur = ref.current
+    if (cur.booking !== 'idle') return
     const v = cur.versions[cur.versions.length - 1].version
     const m = cur.members.find((x) => x.id === id)!
     setS((p) => ({ ...p, decisions: { ...p.decisions, [id]: { memberId: id, proposalVersion: v, status: 'rejected', note: 'Wants a stay closer to the dive spots' } } }))
@@ -397,6 +398,7 @@ function useStoreValue() {
   }, [reset, later, confirmPrivacy])
 
   const triggerNoViable = useCallback(() => {
+    if (ref.current.booking !== 'idle') return
     patch({ noViable: true })
     openTab('options')
   }, [patch, openTab])

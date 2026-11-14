@@ -53,6 +53,8 @@ function useJourney() {
 function DemoControls({ onDone }: { onDone?: () => void }) {
   const { reset, jump, memberLeaves, memberRejects, triggerNoViable, s } = useStore()
   const act = (fn: () => void) => () => { fn(); onDone?.() }
+  // Planning-stage edge cases don't apply once fares are held or paid.
+  const booking = s.booking !== 'idle'
   const btn = 'w-full rounded-lg border border-line bg-white px-3 py-2 text-left text-[13px] font-medium hover:border-brand/50 disabled:opacity-40'
   return (
     <div className="space-y-4">
@@ -67,9 +69,14 @@ function DemoControls({ onDone }: { onDone?: () => void }) {
       <div>
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted">Edge cases</p>
         <div className="grid gap-1.5">
-          <button className={btn} disabled={s.optionsState !== 'ready'} onClick={act(() => memberRejects('karan'))}>Karan rejects the current version</button>
-          <button className={btn} disabled={!s.members.find((m) => m.id === 'priya')?.active} onClick={act(() => memberLeaves('priya'))}>Priya steps out of the trip</button>
-          <button className={btn} onClick={act(triggerNoViable)}>Peak prices: no option meets every must-have</button>
+          <button className={btn} disabled={booking || s.optionsState !== 'ready'} onClick={act(() => memberRejects('karan'))}>Karan rejects the current version</button>
+          <button className={btn} disabled={booking || !s.members.find((m) => m.id === 'priya')?.active} onClick={act(() => memberLeaves('priya'))}>Priya steps out of the trip</button>
+          <button className={btn} disabled={booking} onClick={act(triggerNoViable)}>Peak prices: no option meets every must-have</button>
+          {booking && (
+            <p className="text-[12px] leading-snug text-muted">
+              These happen while the group is still planning. Booking has {s.booking === 'paid' ? 'been paid' : 'started'}, so jump back to step 3 or 5 to try them.
+            </p>
+          )}
         </div>
       </div>
       <button className="flex items-center gap-1.5 text-[13px] font-semibold text-bad" onClick={act(reset)}>
